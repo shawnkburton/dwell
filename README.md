@@ -1,4 +1,4 @@
-# Dwell
+# Listed
 
 Responsive real-estate discovery prototype with a dark home feed, filters, saved homes, local browsing preferences a rule-based virtual-agent demo, and Firebase Authentication. Google sign-in is configured; Microsoft and Apple need provider registrations. See [authentication setup](AUTHENTICATION.md).
 

@@ -1,4 +1,4 @@
-# Dwell authentication
+# Listed authentication
 
 Firebase project: `dwell-d6c55` (Spark plan). The website uses Firebase's modular JavaScript SDK 12.19.0 and Google OAuth popup sign-in. The public Firebase web configuration is embedded in `index.html` in `auth-config`.
 
