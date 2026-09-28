@@ -1,20 +1,23 @@
 # Listed authentication
 
-Firebase project: `dwell-d6c55` (Spark plan). The website uses Firebase's modular JavaScript SDK 12.19.0 and Google OAuth popup sign-in. The public Firebase web configuration is embedded in `index.html` in `auth-config`.
+Firebase project: `dwell-d6c55` (Spark plan). The website uses Firebase's modular JavaScript SDK 12.19.0 and Google/Microsoft OAuth popup sign-in. The public Firebase web configuration is embedded in `index.html` in `auth-config`.
 
-Google is enabled. Microsoft and Apple have client integration code but remain disabled until their provider registrations are configured. No OAuth client secret, Apple private key, service-account key, or user token belongs in this repository.
+Google and Microsoft are enabled. Apple has client integration code but remains disabled until its provider registration is configured. No OAuth client secret, Apple private key, service-account key, or user token belongs in this repository.
 
 ## Provider setup still needed
 
-### Microsoft
+### Microsoft — configured
 
-Register an application in Microsoft Entra. For a consumer website, choose support for organizational directories and personal Microsoft accounts. Register this Web redirect URI:
+- App display name: Listed.
+- Application (client) ID: `4abd304e-688f-436b-930d-77e65e971c17`.
+- Account types: personal Microsoft accounts and organizational accounts. Organizations may require administrator approval because the publisher is not verified.
+- Web redirect URI: `https://dwell-d6c55.firebaseapp.com/__/auth/handler`.
+- The secret is stored only in Firebase Authentication, never in the website or repository.
+- The current secret expires **March 26, 2027**. Before expiry, create a replacement in Microsoft Entra and update the Microsoft provider in Firebase Authentication. Verify sign-in before retiring the previous credential.
+- Entra Free and Firebase Spark remain selected; no paid upgrade or content storage was enabled. Free-tier quotas still apply.
+- Only the basic sign-in profile is requested; there are no mail, calendar, or file scopes.
 
-`https://dwell-d6c55.firebaseapp.com/__/auth/handler`
-
-Enter the application's client ID and client secret in Firebase Authentication → Sign-in method → Microsoft. Keep the secret in Firebase and track its expiry. After enabling the provider, set `providers.microsoft` to `true` in `auth-config` and test with a Microsoft account.
-
-[Official Microsoft-provider setup](https://firebase.google.com/docs/auth/web/microsoft-oauth)
+[Microsoft-provider documentation](https://firebase.google.com/docs/auth/web/microsoft-oauth)
 
 ### Apple
 

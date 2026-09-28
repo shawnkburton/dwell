@@ -1,6 +1,6 @@
 # Listed
 
-Responsive real-estate discovery prototype with a dark home feed, filters, saved homes, local browsing preferences a rule-based virtual-agent demo, and Firebase Authentication. Google sign-in is configured; Microsoft and Apple need provider registrations. See [authentication setup](AUTHENTICATION.md).
+Responsive real-estate discovery prototype with a dark home feed, filters, saved homes, local browsing preferences a rule-based virtual-agent demo, and Firebase Authentication. Google and Microsoft sign-in are configured; Apple needs its provider registration. See [authentication setup](AUTHENTICATION.md).
 
 - `index.html`: desktop and mobile website.
 - `mobile-preview.html`: interactive phone-frame preview.
