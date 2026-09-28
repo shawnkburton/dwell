@@ -174,10 +174,12 @@ function calcHTML(){return `<div class="calc-wrap"><div class="calc-card"><h2>Ne
 function calcUpdate(){const price=+($('#cPrice')?$('#cPrice').value:0)||0,mort=+($('#cMort')?$('#cMort').value:0)||0,other=+($('#cOther')?$('#cOther').value:0)||0;const c=commissionOf(price),gst=c.total*0.05,tc=c.total+gst,net=price-tc-mort-other,rate=price?(tc/price*100):0;$('#cOut').innerHTML=`<div class="calc-row"><span>Sale price</span><strong>${money(price)}</strong></div><div class="calc-row"><span>Commission \u2014 7% on first $100K</span><strong>${money(Math.round(c.first))}</strong></div><div class="calc-row"><span>Commission \u2014 2.5% on balance</span><strong>${money(Math.round(c.rest))}</strong></div><div class="calc-row"><span>GST (5%) on commission</span><strong>${money(Math.round(gst))}</strong></div><div class="calc-row"><span>Total commission cost</span><strong>${money(Math.round(tc))} (${rate.toFixed(2)}%)</strong></div><div class="calc-row"><span>Mortgage payout</span><strong>\u2212${money(mort)}</strong></div><div class="calc-row"><span>Other costs</span><strong>\u2212${money(other)}</strong></div><div class="calc-row net"><span>Estimated net proceeds</span><strong>${money(Math.round(net))}</strong></div>`}
 function showCalc(){if(!$('#calcview').dataset.ready){$('#calcview').innerHTML=calcHTML();$('#calcview').dataset.ready='1';const sync=fromSlider=>{if(fromSlider)$('#cPrice').value=$('#cPriceR').value;else $('#cPriceR').value=Math.min(Math.max(+$('#cPrice').value||0,200000),8000000);calcUpdate()};$('#cPriceR').addEventListener('input',()=>sync(true));['cPrice','cMort','cOther'].forEach(id=>$('#'+id).addEventListener('input',()=>sync(false)));$('#cList').addEventListener('change',e=>{if(e.target.value){$('#cPrice').value=e.target.value;sync(false)}})}calcUpdate()}
 function commenter(){return currentUser?.displayName||currentUser?.email||'Guest'}
-function openComments(id){activeCommentsId=id;const h=HOMES.find(h=>h.id===id);const list=state.comments[id]||[];$('#commentsTitle').textContent='Comments · '+h.address;$('#commentsLog').innerHTML=list.length?list.map(c=>`<div class="message"><strong>${esc(c.name)}</strong><br>${esc(c.text)}<br><small class="subtle">${esc(c.when)}</small></div>`).join(''):'<p class="subtle">No comments yet. Be the first to share your take on this home.</p>';openDialog('comments')}
+async function sharedGet(id){try{if(!window.ListedComments)return null;return await window.ListedComments.getComments(id)}catch{return null}}
+function renderCommentList(list,shared){$('#commentsLog').innerHTML=(list.length?list.map(c=>`<div class="message"><strong>${esc(c.name)}</strong><br>${esc(c.text)}<br><small class="subtle">${esc(c.when||'')}</small></div>`).join(''):'<p class="subtle">No comments yet. Be the first to share your take on this home.</p>')+`<p class="subtle" style="margin:14px 2px 0">${shared?'Visible to everyone.':'Only visible to you in this browser for now.'}</p>`}
+async function openComments(id){activeCommentsId=id;const h=HOMES.find(h=>h.id===id);$('#commentsTitle').textContent='Comments · '+h.address;renderCommentList(state.comments[id]||[],false);openDialog('comments');const shared=await sharedGet(id);if(shared&&activeCommentsId===id){state.comments[id]=shared;persist();renderCommentList(shared,true)}}
 document.addEventListener('click',async e=>{const b=e.target.closest('button,a.logo');if(!b)return;if(b.matches('a.logo')){e.preventDefault();view='feed';render();window.scrollTo({top:0});return}if(b.hasAttribute('data-close')){b.closest('dialog').close();return}if(b.dataset.view){view=b.dataset.view;render();window.scrollTo({top:0});return}if(b.dataset.tag){tag=b.dataset.tag;render();return}if(b.dataset.save){save(+b.dataset.save);return}if(b.dataset.detail){detail(+b.dataset.detail);return}if(b.dataset.comments){openComments(+b.dataset.comments);return}if(b.dataset.ask){showAgent(+b.dataset.ask);return}if(b.dataset.slide){let id=+b.dataset.id,h=HOMES.find(h=>h.id===id);slides[id]=((slides[id]||0)+Number(b.dataset.slide)+h.photos.length)%h.photos.length;let p=document.querySelector(`[data-photo="${id}"]`);p.classList.remove('failed');p.querySelector('img').src=h.photos[slides[id]];p.querySelector('img').alt=`Listing photo ${slides[id]+1} of ${h.address}`;p.querySelector('.photo-count').textContent=`${slides[id]+1} / ${h.photos.length}`;return}if(b.dataset.share){let h=HOMES.find(x=>x.id===+b.dataset.share);try{await navigator.clipboard.writeText(h.url);toast('Original listing link copied')}catch{detail(h.id);toast('Use the original listing link in the details')}return}if(b.dataset.prompt){message('user',b.dataset.prompt);message('assistant',answer(b.dataset.prompt));return}switch(b.dataset.action){case'account':openDialog('account');break;case'agent':activeHome=null;showAgent();break;case'preferences':optionFor($('#prefBudget'),state.budget,money(state.budget));optionFor($('#prefBeds'),state.beds,state.beds+' bedrooms');$('#prefBudget').value=state.budget;$('#prefBeds').value=state.beds;$('#prefType').value=state.type;$('#prefLearning').checked=state.learning;openDialog('preferences');break;case'refresh':render();toast('Your feed is refreshed');break;case'showAll':view='feed';case'clearFilters':state.budget=0;state.beds=0;state.type='all';tag='All';persist();render();break;case'clearHistory':state.views={};persist();render();toast('Browsing activity cleared; saved homes retained');break;case'sources':openDialog('sources');break;}});
 $('#budget').addEventListener('change',e=>{state.budget=+e.target.value;persist();render()});$('#beds').addEventListener('change',e=>{state.beds=+e.target.value;persist();render()});$('#sort').addEventListener('change',e=>{sort=e.target.value;render()});$('#prefForm').addEventListener('submit',e=>{e.preventDefault();state.budget=+$('#prefBudget').value;state.beds=+$('#prefBeds').value;state.type=$('#prefType').value;state.learning=$('#prefLearning').checked;persist();$('#preferences').close();view='feed';render();toast('Your preferences are updated')});$('#chatForm').addEventListener('submit',e=>{e.preventDefault();let q=$('#chatInput').value.trim();if(!q)return;message('user',q);$('#chatInput').value='';message('assistant',answer(q))});
-$('#commentsForm').addEventListener('submit',e=>{e.preventDefault();const t=$('#commentsInput').value.trim();if(!t||!activeCommentsId)return;const list=state.comments[activeCommentsId]||(state.comments[activeCommentsId]=[]);list.push({name:commenter(),text:t,time:Date.now(),when:new Date().toLocaleString('en-CA',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})});persist();$('#commentsInput').value='';openComments(activeCommentsId);toast('Comment posted')});
+$('#commentsForm').addEventListener('submit',async e=>{e.preventDefault();const t=$('#commentsInput').value.trim();if(!t||!activeCommentsId)return;const id=activeCommentsId,name=commenter();$('#commentsInput').value='';let posted=false;try{if(window.ListedComments){await window.ListedComments.postComment(id,name,t);posted=true}}catch{}if(posted){const shared=await sharedGet(id);if(shared&&activeCommentsId===id){state.comments[id]=shared;persist();renderCommentList(shared,true)}}else{const list=state.comments[id]||(state.comments[id]=[]);list.push({name:name,text:t,time:Date.now(),when:new Date().toLocaleString('en-CA',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})});persist();if(activeCommentsId===id)renderCommentList(list,false)}toast(posted?'Comment posted':'Saved in this browser only')});
 $('#sourceLinks').innerHTML='<h3 style="font-size:16px">Property sources</h3>'+HOMES.map(h=>`<p class="source"><strong>${esc(h.address)}</strong><br><a target="_blank" rel="noopener" href="${h.url}">REALTOR.ca listing ↗</a> · <a target="_blank" rel="noopener" href="https://www.bcassessment.ca/Property/Info/${h.bc}">BC Assessment record ↗</a></p>`).join('');
 hydrate();render();
 if(document.modelContext?.registerTool){
@@ -281,4 +283,37 @@ if(document.modelContext?.registerTool){
   });
 })();
 
-</script></body></html>
+</script><script type="module">
+// Shared comments live in this Firebase project's Firestore database (free Spark quota).
+// If the database or its rules aren't set up yet, comments fall back to this browser only.
+window.ListedComments={ready:false,
+  getComments:async()=>{throw new Error('comments backend not ready')},
+  postComment:async()=>{throw new Error('comments backend not ready')}};
+(async function setupSharedComments(){
+  try{
+    const config=JSON.parse(document.getElementById('auth-config').textContent);
+    const [appSdk,fsSdk]=await Promise.all([
+      import('https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js'),
+      import('https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js')
+    ]);
+    const app=appSdk.getApps().length?appSdk.getApp():appSdk.initializeApp(config.firebase);
+    const col=fsSdk.collection(fsSdk.getFirestore(app),'comments');
+    const fmtWhen=t=>new Date(t).toLocaleString('en-CA',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
+    window.ListedComments.getComments=async homeId=>{
+      const snap=await fsSdk.getDocs(fsSdk.query(col,fsSdk.where('homeId','==',Number(homeId)),fsSdk.limit(100)));
+      const list=[];
+      snap.forEach(d=>{const v=d.data();
+        if(v&&typeof v.text==='string'&&v.text.length)
+          list.push({name:String(v.name||'Guest').slice(0,60),text:String(v.text).slice(0,500),time:Number(v.createdAt)||0});
+      });
+      list.sort((a,b)=>a.time-b.time);
+      return list.map(c=>({name:c.name,text:c.text,time:c.time,when:fmtWhen(c.time||Date.now())}));
+    };
+    window.ListedComments.postComment=async (homeId,name,text)=>{
+      await fsSdk.addDoc(col,{homeId:Number(homeId),name:String(name||'Guest').slice(0,60),text:String(text).slice(0,500),createdAt:Date.now()});
+    };
+    window.ListedComments.ready=true;
+  }catch(e){/* local fallback stays in effect */}
+})();
+</script>
+</body></html>
